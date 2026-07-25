@@ -5,6 +5,7 @@ HN Later is an Android-first Hacker News reader built with Expo, React Native, T
 ## Features
 
 - Dark-only Hacker News reader with Top, Best, New, Ask, Show, and Jobs categories.
+- Hacker News search powered by the public Algolia HN API.
 - Story detail screen with comments, sharing, external link opening, and Read Later actions.
 - Comment reader with indentation, collapse/expand, deep replies collapsed by default, and floating jump controls for top-level branches.
 - Local Read Later list with unread/read state, search, filters, sorting, and remove actions.
@@ -50,6 +51,7 @@ The APK is written under `android/app/build/outputs/apk/release/`.
 
 - `app/`: Expo Router screens and tab/stack layout.
 - `src/api/`: official Hacker News Firebase API client and normalizers.
+- `src/api/algolia.ts`: public Algolia HN search client and result normalizer.
 - `src/storage/`: MMKV-backed Read Later and settings stores.
 - `src/hooks/`: React Query and local-state hooks.
 - `src/components/`: reusable mobile UI components.

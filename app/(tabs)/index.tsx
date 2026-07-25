@@ -1,6 +1,6 @@
-import { ChevronDown, RefreshCw, Search } from "lucide-react-native";
+import { ChevronDown, RefreshCw, Search, X } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -10,16 +10,24 @@ import { EmptyState } from "@/components/EmptyState";
 import { IconButton } from "@/components/IconButton";
 import { Screen } from "@/components/Screen";
 import { StoryCard } from "@/components/StoryCard";
-import { useStories } from "@/hooks/useHN";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useSearchStories, useStories } from "@/hooks/useHN";
 import { useReadLater } from "@/hooks/useReadLater";
 import { colors } from "@/theme/colors";
 
 export default function HomeScreen() {
   const [category, setCategory] = useState<HNCategory>("top");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 350);
   const { data, isLoading, isRefetching, error, refetch } = useStories(category);
+  const searchResults = useSearchStories(debouncedSearch);
   const readLater = useReadLater();
-  const stories = useMemo(() => data ?? [], [data]);
+  const isSearching = debouncedSearch.trim().length >= 2;
+  const stories = useMemo(() => (isSearching ? searchResults.data ?? [] : data ?? []), [data, isSearching, searchResults.data]);
+  const loading = isSearching ? searchResults.isLoading : isLoading;
+  const refreshing = isSearching ? searchResults.isRefetching : isRefetching;
+  const listError = isSearching ? searchResults.error : error;
 
   async function openStory(story: Story) {
     if (!story.url) {
@@ -45,16 +53,37 @@ export default function HomeScreen() {
           <Text style={styles.title}>{categoryLabel(category)}</Text>
           <ChevronDown color={colors.text} size={18} />
         </Pressable>
-        <IconButton accessibilityLabel="Recherche">
-          <Search color={colors.text} size={22} />
-        </IconButton>
+        {search.length > 0 ? (
+          <IconButton accessibilityLabel="Effacer la recherche" onPress={() => setSearch("")}>
+            <X color={colors.text} size={22} />
+          </IconButton>
+        ) : (
+          <Search color={colors.textMuted} size={22} />
+        )}
       </View>
-      {isLoading ? (
+      <View style={styles.searchWrap}>
+        <Search color={colors.textSubtle} size={19} />
+        <TextInput
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="Search Hacker News with Algolia"
+          placeholderTextColor={colors.textSubtle}
+          value={search}
+          onChangeText={setSearch}
+          style={styles.searchInput}
+          returnKeyType="search"
+        />
+      </View>
+      {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.orange} />
+          <Text style={styles.loadingText}>{isSearching ? "Searching Hacker News…" : "Loading stories…"}</Text>
         </View>
-      ) : error ? (
-        <EmptyState title="Impossible de charger Hacker News" body="Vérifie la connexion puis tire pour rafraîchir." />
+      ) : listError ? (
+        <EmptyState
+          title={isSearching ? "Search failed" : "Impossible de charger Hacker News"}
+          body={isSearching ? "Algolia did not respond. Try again in a moment." : "Vérifie la connexion puis tire pour rafraîchir."}
+        />
       ) : (
         <FlashList
           data={stories}
@@ -69,12 +98,25 @@ export default function HomeScreen() {
               onToggleSave={() => readLater.toggle(item)}
             />
           )}
-          refreshing={isRefetching}
-          onRefresh={refetch}
-          ListEmptyComponent={<EmptyState title="Aucune story" body="Cette catégorie ne contient rien pour le moment." />}
+          refreshing={refreshing}
+          onRefresh={isSearching ? searchResults.refetch : refetch}
+          ListHeaderComponent={
+            isSearching ? (
+              <View style={styles.resultHeader}>
+                <Text style={styles.resultLabel}>Search results</Text>
+                <Text style={styles.resultQuery}>{debouncedSearch}</Text>
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            <EmptyState
+              title={isSearching ? "No results" : "Aucune story"}
+              body={isSearching ? "Try a broader query or another keyword." : "Cette catégorie ne contient rien pour le moment."}
+            />
+          }
         />
       )}
-      <Pressable onPress={() => refetch()} style={styles.floatingRefresh}>
+      <Pressable onPress={() => (isSearching ? searchResults.refetch() : refetch())} style={styles.floatingRefresh}>
         <RefreshCw color={colors.text} size={18} />
       </Pressable>
       <CategorySheet visible={sheetOpen} selected={category} onSelect={setCategory} onClose={() => setSheetOpen(false)} />
@@ -119,6 +161,51 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
+    padding: 24,
+  },
+  loadingText: {
+    color: colors.textMuted,
+    fontSize: 15,
+    marginTop: 12,
+    textAlign: "center",
+  },
+  searchWrap: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.borderSoft,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: 10,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    minHeight: 46,
+    paddingHorizontal: 12,
+  },
+  searchInput: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 16,
+    minHeight: 44,
+  },
+  resultHeader: {
+    borderBottomColor: colors.borderSoft,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingBottom: 10,
+    paddingHorizontal: 16,
+    paddingTop: 2,
+  },
+  resultLabel: {
+    color: colors.orange,
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  resultQuery: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "800",
+    marginTop: 3,
   },
   floatingRefresh: {
     alignItems: "center",
