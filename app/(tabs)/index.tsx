@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import type { HNCategory, Story } from "@/models/hn";
 import { CategorySheet, categoryLabel } from "@/components/CategorySheet";
 import { EmptyState } from "@/components/EmptyState";
@@ -20,8 +21,18 @@ export default function HomeScreen() {
   const readLater = useReadLater();
   const stories = useMemo(() => data ?? [], [data]);
 
-  function openStory(story: Story) {
-    router.push({ pathname: "/story/[id]", params: { id: String(story.id) } });
+  async function openStory(story: Story) {
+    if (!story.url) {
+      openComments(story);
+      return;
+    }
+    await WebBrowser.openBrowserAsync(story.url, {
+      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+    });
+  }
+
+  function openComments(story: Story) {
+    router.push({ pathname: "/story/[id]/comments", params: { id: String(story.id) } });
   }
 
   return (
@@ -54,6 +65,7 @@ export default function HomeScreen() {
               rank={index + 1}
               saved={readLater.savedIds.has(item.id)}
               onPress={() => openStory(item)}
+              onOpenComments={() => openComments(item)}
               onToggleSave={() => readLater.toggle(item)}
             />
           )}

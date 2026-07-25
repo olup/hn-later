@@ -1,5 +1,5 @@
-import { Bookmark } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Bookmark, ExternalLink, MessageSquare } from "lucide-react-native";
+import { Pressable, StyleSheet, Text, View, type GestureResponderEvent } from "react-native";
 import type { Story } from "@/models/hn";
 import { colors } from "@/theme/colors";
 import { formatCount, formatRelativeTime } from "@/utils/format";
@@ -11,10 +11,16 @@ type Props = {
   compact?: boolean;
   addedLabel?: string;
   onPress: () => void;
+  onOpenComments?: () => void;
   onToggleSave?: () => void;
 };
 
-export function StoryCard({ story, rank, saved, compact, addedLabel, onPress, onToggleSave }: Props) {
+export function StoryCard({ story, rank, saved, compact, addedLabel, onPress, onOpenComments, onToggleSave }: Props) {
+  function handleNestedPress(event: GestureResponderEvent, action?: () => void) {
+    event.stopPropagation();
+    action?.();
+  }
+
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, compact && styles.compact, pressed && styles.pressed]}>
       <View style={styles.rankColumn}>
@@ -36,9 +42,23 @@ export function StoryCard({ story, rank, saved, compact, addedLabel, onPress, on
       </View>
       <View style={styles.side}>
         {onToggleSave ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Read Later" onPress={onToggleSave} hitSlop={12}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Read Later" onPress={(event) => handleNestedPress(event, onToggleSave)} hitSlop={12}>
             <Bookmark size={22} color={saved ? colors.orange : colors.textMuted} fill={saved ? colors.orange : "transparent"} />
           </Pressable>
+        ) : null}
+        {onOpenComments ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Lire les commentaires"
+            onPress={(event) => handleNestedPress(event, onOpenComments)}
+            hitSlop={12}
+            style={styles.commentButton}
+          >
+            <MessageSquare size={17} color={colors.text} />
+            <Text style={styles.commentText}>{story.commentCount}</Text>
+          </Pressable>
+        ) : story.url ? (
+          <ExternalLink size={17} color={colors.textSubtle} />
         ) : null}
         {addedLabel ? <Text style={styles.added}>{addedLabel}</Text> : null}
       </View>
@@ -54,9 +74,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     gap: 12,
-    minHeight: 92,
+    minHeight: 104,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   compact: {
     backgroundColor: colors.surface,
@@ -94,14 +114,14 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 21,
+    fontSize: 17,
+    fontWeight: "700",
+    lineHeight: 24,
   },
   domain: {
-    color: colors.textSubtle,
-    fontSize: 13,
-    marginTop: 4,
+    color: colors.textMuted,
+    fontSize: 14,
+    marginTop: 6,
   },
   metaRow: {
     alignItems: "center",
@@ -112,7 +132,7 @@ const styles = StyleSheet.create({
   },
   meta: {
     color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 13,
   },
   time: {
     color: colors.textMuted,
@@ -121,8 +141,24 @@ const styles = StyleSheet.create({
   },
   side: {
     alignItems: "flex-end",
-    gap: 18,
+    gap: 16,
     minHeight: 56,
+  },
+  commentButton: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceStrong,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: 5,
+    minHeight: 34,
+    paddingHorizontal: 8,
+  },
+  commentText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: "800",
   },
   added: {
     color: colors.textSubtle,

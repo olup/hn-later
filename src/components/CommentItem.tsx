@@ -87,9 +87,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   html: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
+    color: colors.text,
+    fontSize: 16,
+    lineHeight: 24,
   },
   p: {
     marginBottom: 8,

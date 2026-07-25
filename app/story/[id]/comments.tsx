@@ -79,7 +79,10 @@ export default function CommentsScreen() {
           {comments.isLoading ? (
             <View style={styles.center}>
               <ActivityIndicator color={colors.orange} />
+              <Text style={styles.loadingText}>Chargement des meilleurs commentaires…</Text>
             </View>
+          ) : comments.error ? (
+            <EmptyState title="Commentaires indisponibles" body="Hacker News ne répond pas. Réessaie dans un instant." />
           ) : (
             <FlashList
               ref={listRef}
@@ -129,6 +132,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
+    padding: 24,
+  },
+  loadingText: {
+    color: colors.textMuted,
+    fontSize: 15,
+    marginTop: 14,
+    textAlign: "center",
   },
   storyHeader: {
     borderBottomColor: colors.borderSoft,
@@ -138,9 +148,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 21,
+    fontSize: 22,
     fontWeight: "800",
-    lineHeight: 28,
+    lineHeight: 31,
   },
   meta: {
     color: colors.textMuted,

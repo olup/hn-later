@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { EmptyState } from "@/components/EmptyState";
 import { IconButton } from "@/components/IconButton";
 import { Screen } from "@/components/Screen";
@@ -23,6 +24,13 @@ export default function ReadLaterScreen() {
   const [status, setStatus] = useState<ReadLaterStatus>("all");
   const readLater = useReadLater();
   const items = useMemo(() => readLater.filter({ status, query }), [readLater.items, status, query]);
+
+  async function openItem(url?: string) {
+    if (!url) return;
+    await WebBrowser.openBrowserAsync(url, {
+      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+    });
+  }
 
   return (
     <Screen>
@@ -64,7 +72,8 @@ export default function ReadLaterScreen() {
             compact
             saved={!item.read}
             addedLabel={formatDateTime(item.addedAt)}
-            onPress={() => router.push({ pathname: "/story/[id]", params: { id: String(item.id) } })}
+            onPress={() => openItem(item.url)}
+            onOpenComments={() => router.push({ pathname: "/story/[id]/comments", params: { id: String(item.id) } })}
             onToggleSave={() => readLater.remove(item.id)}
           />
         )}

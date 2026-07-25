@@ -22,7 +22,7 @@ export function useStory(id: number) {
 export function useComments(storyId: number, kids: number[] = []) {
   return useQuery({
     queryKey: ["comments", storyId, kids.join(",")],
-    queryFn: () => fetchCommentTree(kids),
+    queryFn: () => fetchCommentTree(kids, 0, { maxDepth: 2, maxTopLevel: 80, maxChildrenPerComment: 8 }),
     enabled: kids.length > 0,
     staleTime: 1000 * 60 * 5,
   });

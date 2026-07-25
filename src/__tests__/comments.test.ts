@@ -1,4 +1,4 @@
-import { flattenComments } from "@/utils/comments";
+import { limitCommentIds, flattenComments } from "@/utils/comments";
 import type { CommentNode } from "@/models/hn";
 
 const tree: CommentNode[] = [
@@ -36,4 +36,8 @@ test("hides descendants of collapsed comments", () => {
 
   expect(flat.find((comment) => comment.id === 2)?.hidden).toBe(true);
   expect(flat.find((comment) => comment.id === 1)?.replyCount).toBe(2);
+});
+
+test("limits the initial top-level comment ids fetched for a thread", () => {
+  expect(limitCommentIds([1, 2, 3, 4], 2)).toEqual([1, 2]);
 });

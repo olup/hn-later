@@ -1,5 +1,6 @@
 import type { CommentNode, HNCategory, HNItem, Story } from "@/models/hn";
 import { getDomain } from "@/utils/format";
+import { limitCommentIds } from "@/utils/comments";
 
 const BASE_URL = "https://hacker-news.firebaseio.com/v0";
 
@@ -59,13 +60,24 @@ export async function fetchStory(id: number): Promise<Story> {
   return normalizeStory(item);
 }
 
-export async function fetchCommentTree(ids: number[] = [], depth = 0): Promise<CommentNode[]> {
-  if (ids.length === 0) return [];
-  const items = await Promise.all(ids.map((id) => fetchItem(id)));
+type CommentTreeOptions = {
+  maxDepth?: number;
+  maxTopLevel?: number;
+  maxChildrenPerComment?: number;
+};
+
+export async function fetchCommentTree(ids: number[] = [], depth = 0, options: CommentTreeOptions = {}): Promise<CommentNode[]> {
+  const maxDepth = options.maxDepth ?? 2;
+  const maxTopLevel = options.maxTopLevel ?? 80;
+  const maxChildrenPerComment = options.maxChildrenPerComment ?? 10;
+  const idsToFetch = depth === 0 ? limitCommentIds(ids, maxTopLevel) : limitCommentIds(ids, maxChildrenPerComment);
+
+  if (idsToFetch.length === 0) return [];
+  const items = await Promise.all(idsToFetch.map((id) => fetchItem(id)));
   const comments: Array<CommentNode | null> = await Promise.all(
     items.map(async (item) => {
       if (!item || item.type !== "comment") return null;
-      const kids = depth > 8 ? [] : await fetchCommentTree(item.kids ?? [], depth + 1);
+      const kids = depth >= maxDepth ? [] : await fetchCommentTree(item.kids ?? [], depth + 1, options);
       return {
         id: item.id,
         author: item.by ?? "unknown",

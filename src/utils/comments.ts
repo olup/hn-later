@@ -31,6 +31,10 @@ export function flattenComments(comments: CommentNode[], options: Options): Flat
   return flat;
 }
 
+export function limitCommentIds(ids: number[], limit: number): number[] {
+  return ids.slice(0, Math.max(0, limit));
+}
+
 export function visibleComments(comments: FlatComment[]): FlatComment[] {
   return comments.filter((comment) => !comment.hidden);
 }
