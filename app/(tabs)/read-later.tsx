@@ -65,10 +65,9 @@ export default function ReadLaterScreen() {
         data={items}
         contentContainerStyle={styles.list}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item, index }) => (
+        renderItem={({ item }) => (
           <StoryCard
             story={item}
-            rank={index + 1}
             compact
             saved={!item.read}
             addedLabel={formatDateTime(item.addedAt)}

@@ -6,7 +6,6 @@ import { formatCount, formatRelativeTime } from "@/utils/format";
 
 type Props = {
   story: Story;
-  rank?: number;
   saved?: boolean;
   compact?: boolean;
   addedLabel?: string;
@@ -15,52 +14,59 @@ type Props = {
   onToggleSave?: () => void;
 };
 
-export function StoryCard({ story, rank, saved, compact, addedLabel, onPress, onOpenComments, onToggleSave }: Props) {
+export function StoryCard({ story, saved, compact, addedLabel, onPress, onOpenComments, onToggleSave }: Props) {
   function handleNestedPress(event: GestureResponderEvent, action?: () => void) {
     event.stopPropagation();
     action?.();
   }
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, compact && styles.compact, pressed && styles.pressed]}>
-      <View style={styles.rankColumn}>
-        {rank ? <Text style={styles.rank}>{rank}</Text> : <View style={[styles.dot, saved && styles.dotSaved]} />}
-      </View>
-      <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={compact ? 2 : 3}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, compact && styles.compact, saved && styles.savedCard, pressed && styles.pressed]}>
+      <View style={styles.titleRow}>
+        <Text style={styles.title} numberOfLines={compact ? 3 : 4}>
           {story.title}
         </Text>
-        <Text style={styles.domain}>{story.domain}</Text>
-        <View style={styles.metaRow}>
-          <Text style={styles.meta}>{formatCount(story.score)} points</Text>
-          <Text style={styles.meta}>·</Text>
-          <Text style={styles.meta}>{story.commentCount} commentaires</Text>
-          <Text style={styles.meta}>·</Text>
-          <Text style={styles.meta}>by {story.author}</Text>
-          {!compact ? <Text style={styles.time}>{formatRelativeTime(story.time)}</Text> : null}
-        </View>
+        {story.url ? <ExternalLink size={15} color={colors.textSubtle} style={styles.externalIcon} /> : null}
       </View>
-      <View style={styles.side}>
-        {onToggleSave ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Read Later" onPress={(event) => handleNestedPress(event, onToggleSave)} hitSlop={12}>
-            <Bookmark size={22} color={saved ? colors.orange : colors.textMuted} fill={saved ? colors.orange : "transparent"} />
-          </Pressable>
-        ) : null}
-        {onOpenComments ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Lire les commentaires"
-            onPress={(event) => handleNestedPress(event, onOpenComments)}
-            hitSlop={12}
-            style={styles.commentButton}
-          >
-            <MessageSquare size={17} color={colors.text} />
-            <Text style={styles.commentText}>{story.commentCount}</Text>
-          </Pressable>
-        ) : story.url ? (
-          <ExternalLink size={17} color={colors.textSubtle} />
-        ) : null}
-        {addedLabel ? <Text style={styles.added}>{addedLabel}</Text> : null}
+
+      <Text style={styles.domain} numberOfLines={1}>
+        {story.domain}
+      </Text>
+
+      <View style={styles.bottomRow}>
+        <View style={styles.metaBlock}>
+          <Text style={styles.meta} numberOfLines={1}>
+            {formatCount(story.score)} pts · by {story.author}
+            {!compact ? ` · ${formatRelativeTime(story.time)}` : ""}
+          </Text>
+          {addedLabel ? <Text style={styles.added}>{addedLabel}</Text> : null}
+        </View>
+
+        <View style={styles.actions}>
+          {onOpenComments ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Lire les commentaires"
+              onPress={(event) => handleNestedPress(event, onOpenComments)}
+              hitSlop={10}
+              style={styles.actionButton}
+            >
+              <MessageSquare size={16} color={colors.textMuted} />
+              <Text style={styles.actionText}>{story.commentCount}</Text>
+            </Pressable>
+          ) : null}
+          {onToggleSave ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Read Later"
+              onPress={(event) => handleNestedPress(event, onToggleSave)}
+              hitSlop={10}
+              style={styles.iconAction}
+            >
+              <Bookmark size={19} color={saved ? colors.orange : colors.textMuted} fill={saved ? colors.orange : "transparent"} />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );
@@ -68,102 +74,89 @@ export function StoryCard({ story, rank, saved, compact, addedLabel, onPress, on
 
 const styles = StyleSheet.create({
   card: {
-    alignItems: "flex-start",
-    backgroundColor: colors.backgroundSoft,
+    backgroundColor: colors.background,
     borderBottomColor: colors.borderSoft,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    gap: 12,
-    minHeight: 104,
+    minHeight: 116,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
   },
   compact: {
     backgroundColor: colors.surface,
     borderRadius: 8,
     borderWidth: 0,
     marginBottom: 8,
-    minHeight: 86,
+    minHeight: 108,
+  },
+  savedCard: {
+    borderLeftColor: colors.orange,
+    borderLeftWidth: 2,
   },
   pressed: {
     opacity: 0.72,
   },
-  rankColumn: {
-    alignItems: "center",
-    paddingTop: 2,
-    width: 22,
-  },
-  rank: {
-    color: colors.orange,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  dot: {
-    backgroundColor: colors.textSubtle,
-    borderRadius: 5,
-    height: 10,
-    marginTop: 4,
-    width: 10,
-  },
-  dotSaved: {
-    backgroundColor: colors.orange,
-  },
-  content: {
-    flex: 1,
-    minWidth: 0,
+  titleRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 8,
   },
   title: {
     color: colors.text,
-    fontSize: 17,
-    fontWeight: "700",
-    lineHeight: 24,
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "500",
+    lineHeight: 26,
+  },
+  externalIcon: {
+    marginTop: 5,
   },
   domain: {
-    color: colors.textMuted,
+    color: colors.textSubtle,
     fontSize: 14,
-    marginTop: 6,
+    marginTop: 7,
   },
-  metaRow: {
-    alignItems: "center",
+  bottomRow: {
+    alignItems: "flex-end",
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 8,
+    gap: 12,
+    justifyContent: "space-between",
+    marginTop: 13,
+  },
+  metaBlock: {
+    flex: 1,
+    minWidth: 0,
   },
   meta: {
     color: colors.textMuted,
     fontSize: 13,
+    lineHeight: 18,
   },
-  time: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginLeft: "auto",
-  },
-  side: {
-    alignItems: "flex-end",
-    gap: 16,
-    minHeight: 56,
-  },
-  commentButton: {
+  actions: {
     alignItems: "center",
-    backgroundColor: colors.surfaceStrong,
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    gap: 4,
+  },
+  actionButton: {
+    alignItems: "center",
     flexDirection: "row",
     gap: 5,
-    minHeight: 34,
+    minHeight: 36,
     paddingHorizontal: 8,
   },
-  commentText: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "800",
+  actionText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  iconAction: {
+    alignItems: "center",
+    height: 36,
+    justifyContent: "center",
+    width: 36,
   },
   added: {
     color: colors.textSubtle,
-    fontSize: 11,
-    maxWidth: 76,
-    textAlign: "right",
+    fontSize: 12,
+    marginTop: 3,
   },
 });

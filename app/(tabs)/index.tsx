@@ -88,10 +88,9 @@ export default function HomeScreen() {
         <FlashList
           data={stories}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item, index }) => (
+          renderItem={({ item }) => (
             <StoryCard
               story={item}
-              rank={index + 1}
               saved={readLater.savedIds.has(item.id)}
               onPress={() => openStory(item)}
               onOpenComments={() => openComments(item)}
