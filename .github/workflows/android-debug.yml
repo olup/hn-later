@@ -49,6 +49,18 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Stamp app version
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+          app.expo.version = process.env.APP_VERSION;
+          app.expo.android = app.expo.android || {};
+          app.expo.android.versionCode = Number(process.env.GITHUB_RUN_NUMBER);
+          fs.writeFileSync('app.json', `${JSON.stringify(app, null, 2)}\n`);
+          NODE
+          cat app.json
+
       - name: Prebuild Android
         run: npx expo prebuild -p android --clean
 

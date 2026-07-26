@@ -11,6 +11,7 @@ HN Later is an Android-first Hacker News reader built with Expo, React Native, T
 - Local Read Later list with unread/read state, search, filters, sorting, and remove actions.
 - Local settings for font size and link-opening preference.
 - GitHub Actions installable APK build without EAS.
+- In-app GitHub Releases update checker that can download the latest APK and launch Android's installer.
 
 ## Local Development
 
@@ -60,4 +61,4 @@ The APK is written under `android/app/build/outputs/apk/release/`.
 
 ## CI
 
-Every push to `main` runs tests, typecheck, Expo Android prebuild, Gradle release APK build, and uploads the installable APK as a GitHub Actions artifact.
+Every push to `main` runs tests, typecheck, stamps the app version as `1.0.<run_number>`, runs Expo Android prebuild, builds a Gradle release APK, uploads the installable APK as a GitHub Actions artifact, and publishes it to GitHub Releases.
