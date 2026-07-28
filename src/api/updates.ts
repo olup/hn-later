@@ -1,6 +1,7 @@
 import Constants from "expo-constants";
 
 const LATEST_RELEASE_URL = "https://api.github.com/repos/olup/hn-later/releases/latest";
+export const GITHUB_LATEST_RELEASE_PAGE_URL = "https://github.com/olup/hn-later/releases/latest";
 
 export type GitHubReleaseAsset = {
   name: string;

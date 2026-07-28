@@ -1,4 +1,9 @@
-import { findApkAsset, isNewerVersion, normalizeReleaseVersion } from "@/api/updates";
+import {
+  GITHUB_LATEST_RELEASE_PAGE_URL,
+  findApkAsset,
+  isNewerVersion,
+  normalizeReleaseVersion,
+} from "@/api/updates";
 
 test("normalizes GitHub release tags into version strings", () => {
   expect(normalizeReleaseVersion("v1.0.42")).toBe("1.0.42");
@@ -18,4 +23,8 @@ test("finds the APK asset in a GitHub release", () => {
   ]);
 
   expect(asset?.browser_download_url).toBe("https://example.com/app.apk");
+});
+
+test("keeps a public latest release page fallback for failed API checks", () => {
+  expect(GITHUB_LATEST_RELEASE_PAGE_URL).toBe("https://github.com/olup/hn-later/releases/latest");
 });

@@ -1,13 +1,14 @@
-import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import { Download, ExternalLink, RefreshCw } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Screen } from "@/components/Screen";
 import { useSettings } from "@/hooks/useSettings";
 import { useLatestUpdate } from "@/hooks/useUpdates";
 import { colors } from "@/theme/colors";
 import type { AppSettings } from "@/storage/settings";
 import { downloadAndLaunchApk } from "@/utils/updateInstaller";
+import { GITHUB_LATEST_RELEASE_PAGE_URL } from "@/api/updates";
 
 const fontOptions: AppSettings["fontScale"][] = ["small", "normal", "large"];
 
@@ -16,11 +17,16 @@ export default function SettingsScreen() {
   const update = useLatestUpdate();
   const [installing, setInstalling] = useState(false);
 
+  async function openExternalUrl(url: string) {
+    await Linking.openURL(url);
+  }
+
   async function openReleasePage() {
-    if (!update.data?.releaseUrl) return;
-    await WebBrowser.openBrowserAsync(update.data.releaseUrl, {
-      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-    });
+    await openExternalUrl(update.data?.releaseUrl ?? GITHUB_LATEST_RELEASE_PAGE_URL);
+  }
+
+  async function openApkDownload() {
+    await openExternalUrl(update.data?.apkUrl ?? update.data?.releaseUrl ?? GITHUB_LATEST_RELEASE_PAGE_URL);
   }
 
   async function installUpdate() {
@@ -35,8 +41,12 @@ export default function SettingsScreen() {
     } catch (error) {
       Alert.alert(
         "Install failed",
-        "Android could not open the downloaded APK. The GitHub release page will open instead.",
-        [{ text: "Open release", onPress: openReleasePage }, { text: "Cancel" }],
+        "Android could not open the downloaded APK from the app. You can download it with the browser instead.",
+        [
+          { text: "Download in browser", onPress: openApkDownload },
+          { text: "Open release", onPress: openReleasePage },
+          { text: "Cancel" },
+        ],
       );
     } finally {
       setInstalling(false);
@@ -45,86 +55,91 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text style={styles.title}>Réglages</Text>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.label}>Thème</Text>
-        <View style={styles.row}>
-          <View>
-            <Text style={styles.rowTitle}>Mode sombre</Text>
-            <Text style={styles.rowBody}>Toujours actif pour le MVP Android.</Text>
-          </View>
-          <Switch value disabled trackColor={{ true: colors.orange }} />
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Réglages</Text>
         </View>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.label}>Taille de police</Text>
-        <View style={styles.segmented}>
-          {fontOptions.map((option) => (
-            <Pressable
-              key={option}
-              onPress={() => setSettings({ ...settings, fontScale: option })}
-              style={[styles.segment, settings.fontScale === option && styles.segmentActive]}
-            >
-              <Text style={[styles.segmentText, settings.fontScale === option && styles.segmentTextActive]}>{option}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.label}>Ouverture des liens</Text>
-        <View style={styles.segmented}>
-          {(["internal", "chrome"] as const).map((option) => (
-            <Pressable
-              key={option}
-              onPress={() => setSettings({ ...settings, linkMode: option })}
-              style={[styles.segment, settings.linkMode === option && styles.segmentActive]}
-            >
-              <Text style={[styles.segmentText, settings.linkMode === option && styles.segmentTextActive]}>
-                {option === "internal" ? "Interne" : "Chrome"}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-      <View style={styles.section}>
-        <Text style={styles.label}>Updates</Text>
-        <View style={styles.updateCard}>
-          <View style={styles.updateHeader}>
-            <View style={styles.updateText}>
-              <Text style={styles.rowTitle}>{update.data?.available ? "Update available" : "HN Later is up to date"}</Text>
-              <Text style={styles.rowBody}>
-                Installed {update.data?.currentVersion ?? "1.0.0"}
-                {update.data ? ` · Latest ${update.data.latestVersion}` : ""}
-              </Text>
+        <View style={styles.section}>
+          <Text style={styles.label}>Thème</Text>
+          <View style={styles.row}>
+            <View>
+              <Text style={styles.rowTitle}>Mode sombre</Text>
+              <Text style={styles.rowBody}>Toujours actif pour le MVP Android.</Text>
             </View>
-            {update.isFetching ? <ActivityIndicator color={colors.orange} /> : null}
-          </View>
-
-          {update.error ? <Text style={styles.errorText}>Could not check GitHub Releases.</Text> : null}
-
-          <View style={styles.updateActions}>
-            <Pressable onPress={() => update.refetch()} style={styles.secondaryButton}>
-              <RefreshCw color={colors.textMuted} size={17} />
-              <Text style={styles.secondaryButtonText}>Check</Text>
-            </Pressable>
-            <Pressable
-              onPress={update.data?.available ? installUpdate : openReleasePage}
-              disabled={installing || update.isLoading}
-              style={[styles.primaryButton, (installing || update.isLoading) && styles.disabledButton]}
-            >
-              {installing ? <ActivityIndicator color={colors.text} /> : update.data?.available ? <Download color={colors.text} size={18} /> : <ExternalLink color={colors.text} size={18} />}
-              <Text style={styles.primaryButtonText}>{installing ? "Downloading…" : update.data?.available ? "Download update" : "Releases"}</Text>
-            </Pressable>
+            <Switch value disabled trackColor={{ true: colors.orange }} />
           </View>
         </View>
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.label}>Taille de police</Text>
+          <View style={styles.segmented}>
+            {fontOptions.map((option) => (
+              <Pressable
+                key={option}
+                onPress={() => setSettings({ ...settings, fontScale: option })}
+                style={[styles.segment, settings.fontScale === option && styles.segmentActive]}
+              >
+                <Text style={[styles.segmentText, settings.fontScale === option && styles.segmentTextActive]}>{option}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.label}>Ouverture des liens</Text>
+          <View style={styles.segmented}>
+            {(["internal", "chrome"] as const).map((option) => (
+              <Pressable
+                key={option}
+                onPress={() => setSettings({ ...settings, linkMode: option })}
+                style={[styles.segment, settings.linkMode === option && styles.segmentActive]}
+              >
+                <Text style={[styles.segmentText, settings.linkMode === option && styles.segmentTextActive]}>
+                  {option === "internal" ? "Interne" : "Chrome"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.label}>Updates</Text>
+          <View style={styles.updateCard}>
+            <View style={styles.updateHeader}>
+              <View style={styles.updateText}>
+                <Text style={styles.rowTitle}>{update.data?.available ? "Update available" : "HN Later is up to date"}</Text>
+                <Text style={styles.rowBody}>
+                  Installed {update.data?.currentVersion ?? "1.0.0"}
+                  {update.data ? ` · Latest ${update.data.latestVersion}` : ""}
+                </Text>
+              </View>
+              {update.isFetching ? <ActivityIndicator color={colors.orange} /> : null}
+            </View>
+
+            {update.error ? <Text style={styles.errorText}>Could not check GitHub Releases. Use Releases to open GitHub directly.</Text> : null}
+
+            <View style={styles.updateActions}>
+              <Pressable onPress={() => update.refetch()} style={styles.secondaryButton}>
+                <RefreshCw color={colors.textMuted} size={17} />
+                <Text style={styles.secondaryButtonText}>Check</Text>
+              </Pressable>
+              <Pressable
+                onPress={update.data?.available ? installUpdate : openReleasePage}
+                disabled={installing}
+                style={[styles.primaryButton, installing && styles.disabledButton]}
+              >
+                {installing ? <ActivityIndicator color={colors.text} /> : update.data?.available ? <Download color={colors.text} size={18} /> : <ExternalLink color={colors.text} size={18} />}
+                <Text style={styles.primaryButtonText}>{installing ? "Downloading..." : update.data?.available ? "Download update" : "Releases"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  content: {
+    paddingBottom: 24,
+  },
   header: {
     padding: 16,
   },
