@@ -12,23 +12,21 @@ import { useReadLater } from "@/hooks/useReadLater";
 import type { FlatComment } from "@/models/hn";
 import { colors } from "@/theme/colors";
 import { formatCount } from "@/utils/format";
-import { flattenComments, topLevelIndices, visibleComments } from "@/utils/comments";
+import { collectCollapsibleCommentIds, flattenComments, topLevelIndices, visibleComments } from "@/utils/comments";
 
 export default function CommentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const storyId = Number(id);
   const listRef = useRef<any>(null);
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
-  const [allCollapsed, setAllCollapsed] = useState(false);
   const [topIndex, setTopIndex] = useState(0);
   const { data: story, isLoading: storyLoading } = useStory(storyId);
   const comments = useComments(storyId, story?.kids ?? []);
   const readLater = useReadLater();
 
   const flat = useMemo(() => {
-    const collapsed = allCollapsed && comments.data ? new Set(comments.data.map((comment) => comment.id)) : collapsedIds;
-    return visibleComments(flattenComments(comments.data ?? [], { collapsedIds: collapsed, collapseDepth: allCollapsed ? 1 : 3 }));
-  }, [comments.data, collapsedIds, allCollapsed]);
+    return visibleComments(flattenComments(comments.data ?? [], { collapsedIds, collapseDepth: 2 }));
+  }, [comments.data, collapsedIds]);
 
   const topLevels = useMemo(() => topLevelIndices(flat), [flat]);
   const saved = story ? readLater.savedIds.has(story.id) : false;
@@ -40,7 +38,10 @@ export default function CommentsScreen() {
       else next.add(idToToggle);
       return next;
     });
-    setAllCollapsed(false);
+  }
+
+  function collapseAllComments() {
+    setCollapsedIds(collectCollapsibleCommentIds(comments.data ?? []));
   }
 
   function jump(delta: number) {
@@ -89,7 +90,7 @@ export default function CommentsScreen() {
               data={flat}
               keyExtractor={(item) => String(item.id)}
               renderItem={({ item }) => (
-                <CommentItem comment={item} collapsed={collapsedIds.has(item.id) || allCollapsed} onToggle={() => toggleComment(item.id)} />
+                <CommentItem comment={item} collapsed={collapsedIds.has(item.id)} onToggle={() => toggleComment(item.id)} />
               )}
               ListEmptyComponent={<EmptyState title="Aucun commentaire" body="Cette discussion n’a pas encore de commentaires." />}
             />
@@ -101,12 +102,11 @@ export default function CommentsScreen() {
             <Pressable onPress={() => jump(1)} style={styles.floatButton}>
               <ChevronsDown color={colors.text} size={20} />
             </Pressable>
-            <Pressable onPress={() => setAllCollapsed(true)} style={styles.floatButton}>
+            <Pressable onPress={collapseAllComments} style={styles.floatButton}>
               <Minimize2 color={colors.text} size={20} />
             </Pressable>
             <Pressable
               onPress={() => {
-                setAllCollapsed(false);
                 setCollapsedIds(new Set());
               }}
               style={styles.floatButton}

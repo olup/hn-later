@@ -1,4 +1,4 @@
-import { limitCommentIds, flattenComments } from "@/utils/comments";
+import { collectCollapsibleCommentIds, limitCommentIds, flattenComments, visibleComments } from "@/utils/comments";
 import type { CommentNode } from "@/models/hn";
 
 const tree: CommentNode[] = [
@@ -40,4 +40,15 @@ test("hides descendants of collapsed comments", () => {
 
 test("limits the initial top-level comment ids fetched for a thread", () => {
   expect(limitCommentIds([1, 2, 3, 4], 2)).toEqual([1, 2]);
+});
+
+test("collects collapsible comment ids so one branch can reopen independently", () => {
+  const collapsedIds = collectCollapsibleCommentIds(tree);
+  const collapsed = visibleComments(flattenComments(tree, { collapsedIds, collapseDepth: 99 }));
+  const oneBranchOpen = new Set(collapsedIds);
+  oneBranchOpen.delete(1);
+  const reopened = visibleComments(flattenComments(tree, { collapsedIds: oneBranchOpen, collapseDepth: 99 }));
+
+  expect(collapsed.map((comment) => comment.id)).toEqual([1, 4]);
+  expect(reopened.map((comment) => comment.id)).toEqual([1, 2, 4]);
 });

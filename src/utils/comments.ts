@@ -35,6 +35,20 @@ export function limitCommentIds(ids: number[], limit: number): number[] {
   return ids.slice(0, Math.max(0, limit));
 }
 
+export function collectCollapsibleCommentIds(comments: CommentNode[]): Set<number> {
+  const ids = new Set<number>();
+
+  const visit = (comment: CommentNode) => {
+    if (comment.kids.length > 0) {
+      ids.add(comment.id);
+      comment.kids.forEach(visit);
+    }
+  };
+
+  comments.forEach(visit);
+  return ids;
+}
+
 export function visibleComments(comments: FlatComment[]): FlatComment[] {
   return comments.filter((comment) => !comment.hidden);
 }
